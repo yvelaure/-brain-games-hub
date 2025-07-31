@@ -1,0 +1,43 @@
+name: Build Android APK Direct
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          
+      - name: Install Cordova
+        run: |
+          npm install -g cordova
+          sudo apt-get update
+          sudo apt-get install -y openjdk-11-jdk
+          
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v2
+        with:
+          api-level: 33
+          
+      - name: Build and Save APK
+        run: |
+          cordova create brain-games com.braingames.hub "Brain Games Hub"
+          cd brain-games
+          cp ../index.html www/
+          cordova platform add android
+          cordova build android --debug
+          cp platforms/android/app/build/outputs/apk/debug/app-debug.apk ../brain-games-hub.apk
+          
+      - name: Commit APK
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add brain-games-hub.apk
+          git commit -m "Add APK file"
+          git push
